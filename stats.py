@@ -1,5 +1,6 @@
 import subprocess
 import json
+from collections import defaultdict
 
 def get_commit_stats():
     result = subprocess.run(['git', 'log', '--pretty=format:%h|%an|%ae|%ai|%s'], capture_output=True, text=True)
@@ -18,15 +19,22 @@ def get_commit_stats():
 
 def summarize_commits(commits):
     total_commits = len(commits)
-    unique_authors = len(set(commit['author_name'] for commit in commits))
-    date_range = (commits[-1]['date'], commits[0]['date']) if commits else (None, None)
+    unique_authors = set()
+    author_stats = defaultdict(lambda: {'commits': 0, 'first_commit': None, 'last_commit': None, 'active_days': defaultdict(int)})
+
+    for commit in commits:
+        author = commit['author_name']
+        unique_authors.add(author)
+        author_stats[author]['commits'] += 1
+        commit_date = commit['date'][:10]
+        author_stats[author]['active_days'][commit_date] += 1
+
+        if author_stats[author]['first_commit'] is None:
+            author_stats[author]['first_commit'] = commit['date']
+        author_stats[author]['last_commit'] = commit['date']
+
     return {
         'total_commits': total_commits,
-        'unique_authors': unique_authors,
-        'date_range': date_range
+        'unique_authors': len(unique_authors),
+        'author_stats': author_stats
     }
-
-if __name__ == '__main__':
-    commit_stats = get_commit_stats()
-    summary = summarize_commits(commit_stats)
-    print(json.dumps(summary))

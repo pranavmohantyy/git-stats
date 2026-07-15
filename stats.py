@@ -2,6 +2,7 @@ import subprocess
 import json
 from collections import defaultdict
 
+
 def get_commit_stats():
     result = subprocess.run(['git', 'log', '--pretty=format:%h|%an|%ae|%ai|%s'], capture_output=True, text=True)
     commits = []
@@ -19,22 +20,25 @@ def get_commit_stats():
 
 def summarize_commits(commits):
     total_commits = len(commits)
-    unique_authors = set()
-    author_stats = defaultdict(lambda: {'commits': 0, 'first_commit': None, 'last_commit': None, 'active_days': defaultdict(int)})
+    commits_by_day = defaultdict(int)
 
     for commit in commits:
-        author = commit['author_name']
-        unique_authors.add(author)
-        author_stats[author]['commits'] += 1
-        commit_date = commit['date'][:10]
-        author_stats[author]['active_days'][commit_date] += 1
+        day = commit['date'][:10]  # Just take the date part
+        weekday = commit['date'][8:10]  # Extract weekday
+        commits_by_day[weekday] += 1
 
-        if author_stats[author]['first_commit'] is None:
-            author_stats[author]['first_commit'] = commit['date']
-        author_stats[author]['last_commit'] = commit['date']
+    return commits_by_day
 
-    return {
-        'total_commits': total_commits,
-        'unique_authors': len(unique_authors),
-        'author_stats': author_stats
-    }
+
+def display_commit_frequency(commits_by_day):
+    days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    for i in range(7):
+        day = days[i]
+        bar = '*' * (commits_by_day.get(str(i), 0) // 2)
+        print(f'{day}: {bar}')
+
+
+if __name__ == '__main__':
+    commits = get_commit_stats()
+    commit_summary = summarize_commits(commits)
+    display_commit_frequency(commit_summary)

@@ -20,25 +20,24 @@ def get_commit_stats():
 
 def summarize_commits(commits):
     total_commits = len(commits)
-    commits_by_day = defaultdict(int)
+    author_stats = defaultdict(int)
+    hour_count = defaultdict(int)
 
     for commit in commits:
-        day = commit['date'][:10]  # Just take the date part
-        weekday = commit['date'][8:10]  # Extract weekday
-        commits_by_day[weekday] += 1
+        author_stats[commit['author_name']] += 1
+        hour = commit['date'][11:13]
+        hour_count[hour] += 1
 
-    return commits_by_day
+    peak_hour = max(hour_count, key=hour_count.get)
 
-
-def display_commit_frequency(commits_by_day):
-    days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    for i in range(7):
-        day = days[i]
-        bar = '*' * (commits_by_day.get(str(i), 0) // 2)
-        print(f'{day}: {bar}')
+    return {
+        'total_commits': total_commits,
+        'author_stats': author_stats,
+        'peak_hour': peak_hour
+    }
 
 
 if __name__ == '__main__':
     commits = get_commit_stats()
-    commit_summary = summarize_commits(commits)
-    display_commit_frequency(commit_summary)
+    summary = summarize_commits(commits)
+    print(json.dumps(summary, indent=2))

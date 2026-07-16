@@ -19,27 +19,21 @@ def get_commit_stats():
     return commits
 
 
-def summarize_commits(commits):
-    monthly_activity = defaultdict(int)
-    for commit in commits:
-        date = commit['date'][:7]
-        monthly_activity[date] += 1
-    return monthly_activity
-
-
-def plot_monthly_activity(monthly_activity):
-    months = list(monthly_activity.keys())
-    counts = list(monthly_activity.values())
-    plt.bar(months, counts)
-    plt.xlabel('Month')
-    plt.ylabel('Number of Commits')
-    plt.title('Monthly Activity')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
+def get_file_change_stats():
+    result = subprocess.run(['git', 'log', '--numstat'], capture_output=True, text=True)
+    file_stats = defaultdict(lambda: {'added': 0, 'deleted': 0})
+    for line in result.stdout.splitlines():
+        if line.strip() == '':
+            continue
+        parts = line.split('\t')
+        if len(parts) == 3:
+            added, deleted, filename = parts
+            file_stats[filename]['added'] += int(added)
+            file_stats[filename]['deleted'] += int(deleted)
+    return file_stats
 
 
 if __name__ == '__main__':
-    commits = get_commit_stats()
-    activity = summarize_commits(commits)
-    plot_monthly_activity(activity)
+    commit_stats = get_commit_stats()
+    file_stats = get_file_change_stats()
+    print(json.dumps({'commits': commit_stats, 'file_stats': file_stats}))
